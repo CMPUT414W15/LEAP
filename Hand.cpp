@@ -33,11 +33,11 @@ const std::string boneNames[] = {"Metacarpal", "Proximal", "Middle", "Distal"};
 const std::string stateNames[] = {"STATE_INVALID", "STATE_START", "STATE_UPDATE", "STATE_END"};
 
 void SampleListener::onInit(const Controller& controller) {
-  std::cout << "Initialized" << std::endl;
+  std::cerr << "Initialized" << std::endl;
 }
 
 void SampleListener::onConnect(const Controller& controller) {
-  std::cout << "Connected" << std::endl;
+  std::cerr << "Connected" << std::endl;
   std::cout << "Frame Id, Hands, Timestamp, Extended Fingers, Tools, Gestures, "
             << "Hand Id, Hand Palm X, Y, Z, Hand Pitch, Hand Roll, Hand Yaw, Arm Direction X, Y, Z, Wrist Position X, Y, Z, Elbow Position X, Y, Z, "
             << "Thumb Id, Thumb Length, Thumb width, "
@@ -73,11 +73,11 @@ void SampleListener::onConnect(const Controller& controller) {
 
 void SampleListener::onDisconnect(const Controller& controller) {
   // Note: not dispatched when running in a debugger.
-  std::cout << "Disconnected" << std::endl;
+  std::cerr << "Disconnected" << std::endl;
 }
 
 void SampleListener::onExit(const Controller& controller) {
-  std::cout << "Exited" << std::endl;
+  std::cerr << "Exited" << std::endl;
 }
 
 void SampleListener::onFrame(const Controller& controller) {
@@ -218,29 +218,29 @@ void SampleListener::onFrame(const Controller& controller) {
 }
 
 void SampleListener::onFocusGained(const Controller& controller) {
-  std::cout << "Focus Gained" << std::endl;
+  std::cerr << "Focus Gained" << std::endl;
 }
 
 void SampleListener::onFocusLost(const Controller& controller) {
-  std::cout << "Focus Lost" << std::endl;
+  std::cerr << "Focus Lost" << std::endl;
 }
 
 void SampleListener::onDeviceChange(const Controller& controller) {
-  std::cout << "Device Changed" << std::endl;
+  std::cerr << "Device Changed" << std::endl;
   const DeviceList devices = controller.devices();
 
   for (int i = 0; i < devices.count(); ++i) {
-    std::cout << "id: " << devices[i].toString() << std::endl;
-    std::cout << "  isStreaming: " << (devices[i].isStreaming() ? "true" : "false") << std::endl;
+    std::cerr << "id: " << devices[i].toString() << std::endl;
+    std::cerr << "  isStreaming: " << (devices[i].isStreaming() ? "true" : "false") << std::endl;
   }
 }
 
 void SampleListener::onServiceConnect(const Controller& controller) {
-  std::cout << "Service Connected" << std::endl;
+  std::cerr << "Service Connected" << std::endl;
 }
 
 void SampleListener::onServiceDisconnect(const Controller& controller) {
-  std::cout << "Service Disconnected" << std::endl;
+  std::cerr << "Service Disconnected" << std::endl;
 }
 
 int main(int argc, char** argv) {
@@ -255,7 +255,7 @@ int main(int argc, char** argv) {
     controller.setPolicy(Leap::Controller::POLICY_BACKGROUND_FRAMES);
 
   // Keep this process running until Enter is pressed
-  std::cout << "Press Enter to quit..." << std::endl;
+  std::cerr << "Press Enter to quit..." << std::endl;
   std::cin.get();
 
   // Remove the sample listener when done
