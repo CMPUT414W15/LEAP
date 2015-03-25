@@ -44,7 +44,7 @@ void SampleListener::onConnect(const Controller& controller) {
             << "Thumb Metacarpal Start X, Y, Z, Thumb Metacarpal End X, Y, Z, Thumb Metacarpal Direction X, Y, Z, "
             << "Thumb Proximal Start X, Y, Z, Thumb Proximal End X, Y, Z, Thumb Proximal Direction X, Y, Z, "
             << "Thumb Middle Start X, Y, Z, Thumb Middle End X, Y, Z, Thumb Middle Direction X, Y, Z, "
-            << "Thumb Distal Start X, Y, Z, Thumb Distal End X, Y, Z, Thum Distal Direction X, Y, Z, "
+            << "Thumb Distal Start X, Y, Z, Thumb Distal End X, Y, Z, Thumb Distal Direction X, Y, Z, "
             << "Index Id, Index Length, Index Width, "
             << "Index Metacarpal Start X, Y, Z, Index Metacarpal End X, Y, Z, Index Metacarpal Direction X, Y, Z, "
             << "Index Proximal Start X, Y, Z, Index Proximal End X, Y, Z, Index Proximal Direction X, Y, Z, "
