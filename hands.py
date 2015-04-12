@@ -14,8 +14,8 @@ filename = "D:/Documents/courses/414/leap/data/left_dribble.csv"
 
 
 class HandsMaker:
-# You can use 'Hand Palm', 'Arm Direction', 'Wrist Position' and 'Elbow
-# Position' in addition to the combination of the following 3
+    # You can use 'Hand Palm', 'Arm Direction', 'Wrist Position' and 'Elbow
+    # Position' in addition to the combination of the following 3
     FINGERS = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky']
     JOINTS = ['Metacarpal', 'Middle', 'Distal', 'Proximal']
     ENDS = ['Start', 'End', 'Direction']
@@ -31,7 +31,7 @@ class HandsMaker:
 
     def joint_key(self, joint_name):
         axes = list('XYZ')
-        return ["%s Position %s" % (joint_name, axis) for axis in axes]
+        return [" ".join([joint_name, axis]) for axis in axes]
 
 
     def fileApply(self, lines_func):
@@ -45,7 +45,7 @@ class HandsMaker:
             x.Show = True
             x.Translation.SetAnimated(True)
             # get animation nodes
-            self.skelAnimationNodes = [x.Translation.GetAnimationNode
+            self.skelAnimationNodes = [x.Translation.GetAnimationNode()
                                        for x in self.skel]
         # read and apply lines_func to each line read
         with open(filename, 'rb') as handfile:
@@ -61,20 +61,17 @@ class HandsMaker:
     # parse and work with each line
     def processLine(self, line_dict):
         # start creating skeleton root at the wrist?
-        wrist_vector = self.posVector("Wrist", line_dict)
-        self.wrist.Translation = wrist_vector
-        self.wrist.Show = True
-
-        print(len(self.skelAnimationNodes))
-        print(self.skel)
-        print([self.posVector(x, line_dict) for x in self.skelNames])
+##        wrist_vector = self.posVector("Wrist", line_dict)
+##        self.wrist.Translation = wrist_vector
+##        self.wrist.Show = True
 
         # set vectors for each skeleton node
-        for node, vector in zip(self.skelAnimationNodes, [self.posVector(x, line_dict) for x in self.skel]):
+        for node, vector in zip(self.skelAnimationNodes, [self.posVector(x, line_dict) for x in self.skelNames]):
             # add key to fcurves for each animation node (translation XYZ values)
-            fcurves = [node.X.FCurve, node.Y.FCurve, node.Z.FCurve]
+            fcurves = [n.FCurve for n in node.Nodes]
             for fcurve, axis in zip(fcurves, vector):
-                fcurve.KeyAdd(FBTime(time), axis)
+                #TODO: fix fcurve
+                fcurve.KeyAdd(0, axis)
         self.time += 1000
 
 if __name__ in ("__main__", "__builtin__"):
