@@ -14,7 +14,6 @@ from bvh import createHeader, createMotion
 
 
 class BVHListener(Leap.Listener):
-
     """ A LEAP listener that writes BVH """
     finger_names = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky']
     bone_names = ['Metacarpal', 'Proximal', 'Intermediate', 'Distal']
@@ -38,25 +37,26 @@ class BVHListener(Leap.Listener):
 
     def on_exit(self, controller):
         print(createMotion(self.channel_data, sum(self.frame_times)))
-        # pass
 
     def vec_to_str(self, v):
         return " ".join(str(i) for i in [v.x, v.y, v.z])
 
     def npmat(self, mat):
+        """ NumPy-ify a LEAP matrix's 3x3 array """
         return np.matrix([[mat[0], mat[1], mat[2]],
                           [mat[3], mat[4], mat[5]],
                           [mat[6], mat[7], mat[8]]])
 
     def mat_to_euler(self, _matrix):
+        """ Get Euler angles from a LEAP matrix's 3x3 array """
         from math import acos, atan2, pi
         yaw = acos(_matrix[2, 2])
         pitch = -atan2(_matrix[2, 0], _matrix[2, 1])
         roll = -atan2(_matrix[0, 2], _matrix[1, 2])
-        # return yaw * (180 / pi), pitch * (180 / pi), roll * (180 / pi)
         return yaw * (180 / pi), roll * (180 / pi), pitch * (180 / pi)
 
     def leap_hand_eulers(self, hand):
+        """ Get Euler angles as calculated in the LEAP API sample code """
         normal = hand.palm_normal
         direction = hand.direction
         pitch = direction.pitch * Leap.RAD_TO_DEG
