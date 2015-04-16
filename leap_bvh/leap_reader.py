@@ -44,7 +44,9 @@ class BVHListener(Leap.Listener):
         return " ".join(str(i) for i in [v.x, v.y, v.z])
 
     def npmat(self, mat):
-        return np.matrix(np.reshape(np.array(mat), (3, 3)))
+        return np.matrix([[mat[0], mat[1], mat[2]],
+                          [mat[3], mat[4], mat[5]],
+                          [mat[6], mat[7], mat[8]]])
 
     def mat_to_euler(self, _matrix):
         from math import acos, atan2, pi
@@ -84,22 +86,14 @@ class BVHListener(Leap.Listener):
 
             # do all frame things
             mat = hand.basis.rigid_inverse().to_array_3x3()
-            hand_mat = np.matrix([[mat[0], mat[1], mat[2]],
-                                  [mat[3], mat[4], mat[5]],
-                                  [mat[6], mat[7], mat[8]]])
-
-            frame_data = self.vec_to_str(hand.palm_position) + " "
+            hand_mat = self.npmat(mat)
+            frame_data = "0 0 0 "
             frame_data += self.leap_hand_eulers(hand) + " "
             for finger in hand.fingers:
                 finger_mat = hand_mat
                 for b in range(4):
                     bone = finger.bone(b)
-                # for bone in (finger.bone(b) for b in range(4)):
-                    # print(b, "b")
-                    mat = bone.basis.rigid_inverse().to_array_3x3()
-                    mat = np.matrix([[mat[0], mat[1], mat[2]],
-                                     [mat[3], mat[4], mat[5]],
-                                     [mat[6], mat[7], mat[8]]])
+                    mat = self.npmat(bone.basis.rigid_inverse().to_array_3x3())
                     finger_mat = np.linalg.inv(finger_mat) * mat
                     yaw, roll, pitch = self.mat_to_euler(finger_mat)
                     print("yaw, pitch, roll", file=sys.stderr)
