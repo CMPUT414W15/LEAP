@@ -12,10 +12,9 @@ import numpy as np
 from bvh import createHeader, createMotion
 
 from numpy.linalg import inv
-from math import acos, atan2, cos, pi, sin
 from numpy import float64, hypot, zeros, matrix
 
-sys.path.insert(0, "/Users/Karim/LeapSDK/lib")
+sys.path.insert(0, "/Users/Karim/Workspace/LeapSDK/lib")
 
 import Leap
 class BVHListener(Leap.Listener):
@@ -53,15 +52,6 @@ class BVHListener(Leap.Listener):
                           [mat[6], mat[7], mat[8]]])
 
 
-    def mat_to_euler(self, mtx):
-        yaw = np.arccos(mtx[2, 2])
-        pitch = -np.arctan2(mtx[2, 0], mtx[2, 1])
-        roll = -np.arctan2(mtx[0, 2], mtx[1, 2])
-
-        return "%s %s %s " % (yaw * Leap.RAD_TO_DEG ,
-                              pitch * Leap.RAD_TO_DEG,
-                              roll * Leap.RAD_TO_DEG)
-
     def hand_to_euler(self, normal, direction):
         """ Get Euler angles as calculated in the LEAP API sample code """
 
@@ -71,24 +61,25 @@ class BVHListener(Leap.Listener):
         return "%s %s %s " % (roll, pitch, yaw)
 
     def euler_from_rotation(self, mtx):
-        # if mtx.y_basis.x > 0.998:
-        #     yaw = np.arctan2(mtx.x_basis.z, mtx.z_basis.z)
-        #     pitch = Math.PI/2
-        #     roll = 0
-        # elif mtx.y_basis.x  < -0.998:
-        #     yaw = np.arctan2(mtx.x_basis.z, mtx.z_basis.z)
-        #     pitch = -Math.PI/2
-        #     roll = 0
-        # else:
-        #     yaw = np.arctan2(-mtx.z_basis.x, mtx.x_basis.x)
-        #     roll = np.arctan2(-mtx.y_basis.z, mtx.y_basis.y)
-        #     pitch = np.arcsin(mtx.y_basis.x)
-        #
-        # return "%s %s %s " % (yaw * Leap.RAD_TO_DEG ,
-        #                       pitch * Leap.RAD_TO_DEG,
-        #                       roll * Leap.RAD_TO_DEG)
+        sinP = mtx.y_basis.z
 
-        return "0 0 0 "
+        if sinP >= 0.9999:
+            pitch = np.pi/2
+        elif sinP <= -0.9999:
+            pitch = -np.pi/2
+        else:
+            pitch = np.arcsin(sinP)
+
+        if sinP < -0.9999 or sinP > 0.9999:
+            yaw = np.arctan2(-mtx.z_basis.y, mtx.x_basis.x)
+            roll = 0
+        else:
+            yaw = np.arctan2(mtx.x_basis.z, mtx.z_basis.z)
+            roll = -np.arctan2(mtx.y_basis.x, mtx.y_basis.y)
+
+        return "%s %s %s " % (yaw * Leap.RAD_TO_DEG,
+                              pitch * Leap.RAD_TO_DEG,
+                              roll * Leap.RAD_TO_DEG)
 
     def on_frame(self, controller):
         frame = controller.frame()
@@ -113,26 +104,26 @@ class BVHListener(Leap.Listener):
             # right hand only?
 
             frame_data = "0 0 0 "
-
             frame_data += self.hand_to_euler(hand.palm_normal, hand.direction)
 
-            # for finger in hand.fingers:
-            #     for b in range(4):
-            #         # frame_data += '0 0 0 '
-            #         bone = finger.bone(b)
-            #         # mat = self.npmat(bone.basis.rigid_inverse().to_array_3x3())
-            #         # finger_mat = np.linalg.inv(finger_mat) * mat
-            #         # yaw, roll, pitch = self.mat_to_euler(finger_mat)
-            #         # print("yaw, pitch, roll", file=sys.stderr)
-            #         # print(yaw, pitch, roll, file=sys.stderr)
-            #         # frame_data += "%s " % (yaw)
-            #         # frame_data += "%s " % (roll)
-            #         # frame_data += "%s " % (pitch)
-            #
-            #         # if b == 3:
-            #         frame_data += self.euler_from_rotation(bone.basis)
-            #         # else:
-            #         #     frame_data += "0 0 0 "
+            for finger in hand.fingers:
+                prevMtx = hand.basis
+
+                for b in range(4):
+                    # frame_data += '0 0 0 '
+                    bone = finger.bone(b)
+                    # mat = self.npmat(bone.basis.rigid_inverse().to_array_3x3())
+                    # finger_mat = np.linalg.inv(finger_mat) * mat
+                    # yaw, roll, pitch = self.mat_to_euler(finger_mat)
+                    # print("yaw, pitch, roll", file=sys.stderr)
+                    # print(yaw, pitch, roll, file=sys.stderr)
+                    # frame_data += "%s " % (yaw)
+                    # frame_data += "%s " % (roll)
+                    # frame_data += "%s " % (pitch)
+
+                    frame_data += self.euler_from_rotation(prevMtx * bone.basis)
+                    prevMtx = bone.basis
+
 
 
             # # do all frame things
