@@ -7,14 +7,18 @@
 ##########################################################################
 
 from __future__ import print_function
-import Leap
 import sys
 import numpy as np
 from bvh import createHeader, createMotion
 
+from numpy.linalg import inv
+from math import acos, atan2, cos, pi, sin
+from numpy import float64, hypot, zeros, matrix
 
+sys.path.insert(0, "/Users/Karim/LeapSDK/lib")
+
+import Leap
 class BVHListener(Leap.Listener):
-
     """ A LEAP listener that writes BVH """
     finger_names = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky']
     bone_names = ['Metacarpal', 'Proximal', 'Intermediate', 'Distal']
@@ -38,30 +42,53 @@ class BVHListener(Leap.Listener):
 
     def on_exit(self, controller):
         print(createMotion(self.channel_data, sum(self.frame_times)))
-        # pass
 
     def vec_to_str(self, v):
         return " ".join(str(i) for i in [v.x, v.y, v.z])
 
     def npmat(self, mat):
-        return np.matrix(np.reshape(np.array(mat), (3, 3)))
+        """ NumPy-ify a LEAP matrix's 3x3 array """
+        return np.matrix([[mat[0], mat[1], mat[2]],
+                          [mat[3], mat[4], mat[5]],
+                          [mat[6], mat[7], mat[8]]])
 
-    def mat_to_euler(self, _matrix):
-        from math import acos, atan2, pi
-        yaw = acos(_matrix[2, 2])
-        pitch = -atan2(_matrix[2, 0], _matrix[2, 1])
-        roll = -atan2(_matrix[0, 2], _matrix[1, 2])
-        # return yaw * (180 / pi), pitch * (180 / pi), roll * (180 / pi)
-        return yaw * (180 / pi), roll * (180 / pi), pitch * (180 / pi)
 
-    def leap_hand_eulers(self, hand):
-        normal = hand.palm_normal
-        direction = hand.direction
+    def mat_to_euler(self, mtx):
+        yaw = np.arccos(mtx[2, 2])
+        pitch = -np.arctan2(mtx[2, 0], mtx[2, 1])
+        roll = -np.arctan2(mtx[0, 2], mtx[1, 2])
+
+        return "%s %s %s " % (yaw * Leap.RAD_TO_DEG ,
+                              pitch * Leap.RAD_TO_DEG,
+                              roll * Leap.RAD_TO_DEG)
+
+    def hand_to_euler(self, normal, direction):
+        """ Get Euler angles as calculated in the LEAP API sample code """
+
         pitch = direction.pitch * Leap.RAD_TO_DEG
-        roll = normal.roll * Leap.RAD_TO_DEG
         yaw = direction.yaw * Leap.RAD_TO_DEG
-        result = " ".join(str(i) for i in [yaw, roll, pitch])
-        return result
+        roll = normal.roll * Leap.RAD_TO_DEG
+        return "%s %s %s " % (roll, pitch, yaw)
+
+    def euler_from_rotation(self, mtx):
+        # if mtx.y_basis.x > 0.998:
+        #     yaw = np.arctan2(mtx.x_basis.z, mtx.z_basis.z)
+        #     pitch = Math.PI/2
+        #     roll = 0
+        # elif mtx.y_basis.x  < -0.998:
+        #     yaw = np.arctan2(mtx.x_basis.z, mtx.z_basis.z)
+        #     pitch = -Math.PI/2
+        #     roll = 0
+        # else:
+        #     yaw = np.arctan2(-mtx.z_basis.x, mtx.x_basis.x)
+        #     roll = np.arctan2(-mtx.y_basis.z, mtx.y_basis.y)
+        #     pitch = np.arcsin(mtx.y_basis.x)
+        #
+        # return "%s %s %s " % (yaw * Leap.RAD_TO_DEG ,
+        #                       pitch * Leap.RAD_TO_DEG,
+        #                       roll * Leap.RAD_TO_DEG)
+
+        return "0 0 0 "
 
     def on_frame(self, controller):
         frame = controller.frame()
@@ -82,50 +109,59 @@ class BVHListener(Leap.Listener):
                 print(createHeader(joints, offsets))
                 self.first_frame = frame.id
 
-            # do all frame things
-            mat = hand.basis.rigid_inverse().to_array_3x3()
-            hand_mat = np.matrix([[mat[0], mat[1], mat[2]],
-                                  [mat[3], mat[4], mat[5]],
-                                  [mat[6], mat[7], mat[8]]])
 
-            frame_data = self.vec_to_str(hand.palm_position) + " "
-            frame_data += self.leap_hand_eulers(hand) + " "
-            for finger in hand.fingers:
-                finger_mat = hand_mat
-                for b in range(4):
-                    bone = finger.bone(b)
-                # for bone in (finger.bone(b) for b in range(4)):
-                    # print(b, "b")
-                    mat = bone.basis.rigid_inverse().to_array_3x3()
-                    mat = np.matrix([[mat[0], mat[1], mat[2]],
-                                     [mat[3], mat[4], mat[5]],
-                                     [mat[6], mat[7], mat[8]]])
-                    finger_mat = np.linalg.inv(finger_mat) * mat
-                    yaw, roll, pitch = self.mat_to_euler(finger_mat)
-                    print("yaw, pitch, roll", file=sys.stderr)
-                    print(yaw, pitch, roll, file=sys.stderr)
-                    frame_data += "%s " % (yaw)
-                    frame_data += "%s " % (roll)
-                    frame_data += "%s " % (pitch)
+            # right hand only?
+
+            frame_data = "0 0 0 "
+
+            frame_data += self.hand_to_euler(hand.palm_normal, hand.direction)
+
+            # for finger in hand.fingers:
+            #     for b in range(4):
+            #         # frame_data += '0 0 0 '
+            #         bone = finger.bone(b)
+            #         # mat = self.npmat(bone.basis.rigid_inverse().to_array_3x3())
+            #         # finger_mat = np.linalg.inv(finger_mat) * mat
+            #         # yaw, roll, pitch = self.mat_to_euler(finger_mat)
+            #         # print("yaw, pitch, roll", file=sys.stderr)
+            #         # print(yaw, pitch, roll, file=sys.stderr)
+            #         # frame_data += "%s " % (yaw)
+            #         # frame_data += "%s " % (roll)
+            #         # frame_data += "%s " % (pitch)
+            #
+            #         # if b == 3:
+            #         frame_data += self.euler_from_rotation(bone.basis)
+            #         # else:
+            #         #     frame_data += "0 0 0 "
+
+
+            # # do all frame things
+            # mat = hand.basis.rigid_inverse().to_array_3x3()
+            # hand_mat = self.npmat(mat)
+            # frame_data = "0 0 0 "
+            # frame_data += self.leap_hand_eulers(hand) + " "
+            # for finger in hand.fingers:
+            #     finger_mat = hand_mat
+            #     for b in range(4):
+            #         bone = finger.bone(b)
+            #         mat = self.npmat(bone.basis.rigid_inverse().to_array_3x3())
+            #         finger_mat = np.linalg.inv(finger_mat) * mat
+            #         yaw, roll, pitch = self.mat_to_euler(finger_mat)
+            #         print("yaw, pitch, roll", file=sys.stderr)
+            #         print(yaw, pitch, roll, file=sys.stderr)
+            #         frame_data += "%s " % (yaw)
+            #         frame_data += "%s " % (roll)
+            #         frame_data += "%s " % (pitch)
 
             self.channel_data.append(frame_data)
             self.frame_times.append(0.4)
-
-    def state_string(self, state):
-        if state == Leap.Gesture.STATE_START:
-            return "STATE_START"
-        if state == Leap.gesture.STATE_UPDATE:
-            return "STATE_UPDATE"
-        if state == Leap.gesture.STATE_STOP:
-            return "STATE_STOP"
-        if state == Leap.gesture.STATE_INVALID:
-            return "STATE_INVALID"
-
 
 def main():
     # Create a sample listener and controller
     listener = BVHListener()
     controller = Leap.Controller()
+
+    controller.set_policy(Leap.Controller.POLICY_BACKGROUND_FRAMES)
 
     # Have the sample listener receive events from the controller
     controller.add_listener(listener)

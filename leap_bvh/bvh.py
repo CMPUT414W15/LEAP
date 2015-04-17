@@ -12,7 +12,7 @@ def createHeader(joints, offsets):
 	header = "HIERARCHY"
 
 	root = " 6 Xposition Yposition Zposition Zrotation Xrotation Yrotation"
-	joint = " 3 Zrotation Xrotation Yrotation"
+	joint = " 3 Yrotation Xrotation Zrotation"
 
 	channels = [root] + [joint] * (len(joints) - 1)
 
@@ -30,7 +30,7 @@ def createHeader(joints, offsets):
 			while (c - temp >= 0):
 				header += '\t'*(c - temp + 1) + '}\n'
 				c -= 1
-		
+
 		elif joint[-10:] == "Metacarpal":
 			header += '\n' + '\t'*(c - counter) +  'JOINT %s\n'%(joint) + '\t'*(c - counter + 1) + '{\n' + '\t'*(c - counter + 1) + 'OFFSET 0.0 0.0 0.0\n' + '\t'*(c - counter + 1) +'CHANNELS %s '%(channels[c])
 		else:
@@ -71,11 +71,3 @@ if __name__ == "__main__":
 
 	print(BVH)
 	# print(header)
-
-
-
-
-
-
-
-
