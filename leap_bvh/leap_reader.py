@@ -14,7 +14,7 @@ from bvh import createHeader, createMotion
 from numpy.linalg import inv
 from numpy import float64, hypot, zeros, matrix
 
-sys.path.insert(0, "/Users/Karim/Workspace/LeapSDK/lib")
+sys.path.insert(0, "/Users/Karim/LeapSDK/lib")
 
 import Leap
 class BVHListener(Leap.Listener):
@@ -60,26 +60,35 @@ class BVHListener(Leap.Listener):
         roll = normal.roll * Leap.RAD_TO_DEG
         return "%s %s %s " % (roll, pitch, yaw)
 
-    def euler_from_rotation(self, mtx):
-        sinP = mtx.y_basis.z
+    # def euler_from_rotation(self, mtx):
+    #     sinP = mtx.y_basis.z
+    #
+    #     if sinP >= 0.9999:
+    #         pitch = np.pi/2
+    #     elif sinP <= -0.9999:
+    #         pitch = -np.pi/2
+    #     else:
+    #         pitch = np.arcsin(sinP)
+    #
+    #     if sinP < -0.9999 or sinP > 0.9999:
+    #         yaw = np.arctan2(-mtx.z_basis.y, mtx.x_basis.x)
+    #         roll = 0
+    #     else:
+    #         yaw = np.arctan2(mtx.x_basis.z, mtx.z_basis.z)
+    #         roll = -np.arctan2(mtx.y_basis.x, mtx.y_basis.y)
+    #
+    #     return "%s %s %s " % (yaw * Leap.RAD_TO_DEG,
+    #                           pitch * Leap.RAD_TO_DEG,
+    #                           roll * Leap.RAD_TO_DEG)
 
-        if sinP >= 0.9999:
-            pitch = np.pi/2
-        elif sinP <= -0.9999:
-            pitch = -np.pi/2
-        else:
-            pitch = np.arcsin(sinP)
+    def decompose_rotation(self, R):
+    	x = np.arctan2(R[2,1], R[2,2])
+    	y = np.arctan2(-R[2,0], np.sqrt(R[2,1]*R[2,1] + R[2,2]*R[2,2]))
+    	z = np.arctan2(R[1,0], R[0,0])
 
-        if sinP < -0.9999 or sinP > 0.9999:
-            yaw = np.arctan2(-mtx.z_basis.y, mtx.x_basis.x)
-            roll = 0
-        else:
-            yaw = np.arctan2(mtx.x_basis.z, mtx.z_basis.z)
-            roll = -np.arctan2(mtx.y_basis.x, mtx.y_basis.y)
-
-        return "%s %s %s " % (yaw * Leap.RAD_TO_DEG,
-                              pitch * Leap.RAD_TO_DEG,
-                              roll * Leap.RAD_TO_DEG)
+        return "%s %s %s " % (z * Leap.RAD_TO_DEG,
+                              y * Leap.RAD_TO_DEG,
+                              x * Leap.RAD_TO_DEG)
 
     def on_frame(self, controller):
         frame = controller.frame()
@@ -107,7 +116,6 @@ class BVHListener(Leap.Listener):
             frame_data += self.hand_to_euler(hand.palm_normal, hand.direction)
 
             for finger in hand.fingers:
-                prevMtx = hand.basis
 
                 for b in range(4):
                     # frame_data += '0 0 0 '
@@ -120,9 +128,21 @@ class BVHListener(Leap.Listener):
                     # frame_data += "%s " % (yaw)
                     # frame_data += "%s " % (roll)
                     # frame_data += "%s " % (pitch)
+                    # v1 = bone.prev_joint - hand.arm.wrist_position
+                    # v2 = bone.next_joint - hand.arm.wrist_position
 
-                    frame_data += self.euler_from_rotation(prevMtx * bone.basis)
-                    prevMtx = bone.basis
+                    # dv = bone.next_joint - bone.prev_joint
+                    #
+                    # print(bone.basis.to_array_4x4(), file=sys.stderr)
+                    #
+                    # frame_data += "0 0 0 "
+                    #
+                    # frame_data += "%s %s %s " % (dv.roll * Leap.RAD_TO_DEG,
+                    #                              dv.pitch * Leap.RAD_TO_DEG,
+                    #                              dv.yaw * Leap.RAD_TO_DEG)
+
+                    mat = self.npmat(bone.basis.rigid_inverse().to_array_3x3())
+                    frame_data += self.decompose_rotation(mat)
 
 
 

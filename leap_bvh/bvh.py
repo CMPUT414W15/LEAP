@@ -12,7 +12,7 @@ def createHeader(joints, offsets):
 	header = "HIERARCHY"
 
 	root = " 6 Xposition Yposition Zposition Zrotation Xrotation Yrotation"
-	joint = " 3 Yrotation Xrotation Zrotation"
+	joint = " 3 Zrotation Yrotation Xrotation"
 
 	channels = [root] + [joint] * (len(joints) - 1)
 
