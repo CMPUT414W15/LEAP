@@ -7,36 +7,34 @@
 ##########################################################################
 
 from __future__ import print_function
-import Leap
 import sys
 import numpy as np
 from bvh import createHeader, createMotion
+
+from numpy.linalg import inv
+from numpy import float64, hypot, zeros, matrix
+
+# if you don't have the LeapSDK setup in PATH, use:
+# sys.path.insert(0, "/Users/Karim/Workspace/LeapSDK/lib")
+
+import Leap
 
 
 class BVHListener(Leap.Listener):
     """ A LEAP listener that writes BVH """
     finger_names = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky']
     bone_names = ['Metacarpal', 'Proximal', 'Intermediate', 'Distal']
-    state_names = ['STATE_INVALID', 'STATE_START', 'STATE_UPDATE', 'STATE_END']
 
     def __init__(self):
         Leap.Listener.__init__(self)
         self.first_frame = 0
-        self.frame_times = []
+        self.frame_times = 0
         self.channel_data = []
 
-    def on_init(self, controller):
-        pass
-
-    def on_connect(self, controller):
-        pass
-
-    def on_disconnect(self, controller):
-        # Note: not dispatched when running in a debugger.
-        pass
-
     def on_exit(self, controller):
-        print(createMotion(self.channel_data, sum(self.frame_times)))
+        frame_sample = 1 / (self.frame_times / len(self.channel_data))
+
+        print(createMotion(self.channel_data, frame_sample))
 
     def vec_to_str(self, v):
         return " ".join(str(i) for i in [v.x, v.y, v.z])
@@ -47,26 +45,51 @@ class BVHListener(Leap.Listener):
                           [mat[3], mat[4], mat[5]],
                           [mat[6], mat[7], mat[8]]])
 
-    def mat_to_euler(self, _matrix):
-        """ Get Euler angles from a LEAP matrix's 3x3 array """
-        from math import acos, atan2, pi
-        yaw = acos(_matrix[2, 2])
-        pitch = -atan2(_matrix[2, 0], _matrix[2, 1])
-        roll = -atan2(_matrix[0, 2], _matrix[1, 2])
-        return yaw * (180 / pi), roll * (180 / pi), pitch * (180 / pi)
-
-    def leap_hand_eulers(self, hand):
+    def hand_to_euler(self, normal, direction):
         """ Get Euler angles as calculated in the LEAP API sample code """
-        normal = hand.palm_normal
-        direction = hand.direction
         pitch = direction.pitch * Leap.RAD_TO_DEG
-        roll = normal.roll * Leap.RAD_TO_DEG
         yaw = direction.yaw * Leap.RAD_TO_DEG
-        result = " ".join(str(i) for i in [yaw, roll, pitch])
-        return result
+        roll = normal.roll * Leap.RAD_TO_DEG
+        return "%s %s %s " % (roll, pitch, yaw)
+
+    def rotation_to_euler(self, R):
+        # old decomposition
+        # yaw = np.arctan2(R[2,1], R[2,2])
+        # roll = np.arctan2(-R[2,0], np.sqrt(R[2,1]*R[2,1] + R[2,2]*R[2,2]))
+        # pitch = np.arctan2(R[1,0], R[0,0])
+
+        # Algorithem from
+        # http://staff.city.ac.uk/~sbbh653/publications/euler.pdf
+        # xxxx1 and xxxx2 are oppsoites rotations of each other
+
+        if R[2, 0] != 1 and R[2, 0] != -1:
+            roll1 = -np.arcsin(R[2, 0])
+            roll2 = np.pi - roll1
+
+            yaw1 = np.arctan2(R[2, 1]/np.cos(roll1), R[2, 2]/np.cos(roll1))
+            yaw2 = np.arctan2(R[2, 1]/np.cos(roll2), R[2, 2]/np.cos(roll2))
+
+            pitch1 = np.arctan2(R[1, 0]/np.cos(roll1), R[0, 0]/np.cos(roll1))
+            pitch2 = np.arctan2(R[1, 0]/np.cos(roll2), R[0, 0]/np.cos(roll2))
+
+        else:
+            pitch1 = pitch2 = 0
+            alpha = np.arctan2(R[0, 1], R[0, 2])
+
+            if R[2, 0] == -1:
+                roll1 = roll2 = np.pi/2
+                yaw1 = yaw2 = pitch1 + alpha
+            else:
+                roll1 = roll2 = -np.pi/2
+                yaw1 = yaw2 = -pitch1 + alpha
+
+        return "%s %s %s " % (pitch1 * Leap.RAD_TO_DEG,
+                              roll1 * Leap.RAD_TO_DEG,
+                              yaw1 * Leap.RAD_TO_DEG)
 
     def on_frame(self, controller):
         frame = controller.frame()
+
         for hand in frame.hands:
             # do first frame things, i.e. HIERARCHY
             if self.first_frame == 0:
@@ -76,7 +99,8 @@ class BVHListener(Leap.Listener):
                 joints = [" ".join([finger, bone])
                           for finger in self.finger_names
                           for bone in self.bone_names]
-                joints.insert(0, "Hand")
+
+                joints.insert(0, ("Right" if hand.is_right else "Left") + "Hand")
                 vector_offsets = [bone.next_joint - bone.prev_joint
                                   for bone in bones]
                 vector_offsets.insert(0, Leap.Vector(0, 0, 0))
@@ -84,42 +108,37 @@ class BVHListener(Leap.Listener):
                 print(createHeader(joints, offsets))
                 self.first_frame = frame.id
 
-            # do all frame things
-            mat = hand.basis.rigid_inverse().to_array_3x3()
-            hand_mat = self.npmat(mat)
+            # right hand only?
+
             frame_data = "0 0 0 "
-            frame_data += self.leap_hand_eulers(hand) + " "
+            frame_data += self.hand_to_euler(hand.palm_normal, hand.direction)
+
             for finger in hand.fingers:
-                finger_mat = hand_mat
+
                 for b in range(4):
                     bone = finger.bone(b)
-                    mat = self.npmat(bone.basis.rigid_inverse().to_array_3x3())
-                    finger_mat = np.linalg.inv(finger_mat) * mat
-                    yaw, roll, pitch = self.mat_to_euler(finger_mat)
-                    print("yaw, pitch, roll", file=sys.stderr)
-                    print(yaw, pitch, roll, file=sys.stderr)
-                    frame_data += "%s " % (yaw)
-                    frame_data += "%s " % (roll)
-                    frame_data += "%s " % (pitch)
+
+                    if finger.type() == Leap.Finger.TYPE_THUMB and b == 0:
+                        frame_data += "0 0 0 "
+                    else:
+                        #
+                        mat = self.npmat(bone.basis.rigid_inverse().to_array_3x3())
+
+                        if hand.is_left:
+                            mat[:, 0] *= -1
+
+                        frame_data += self.rotation_to_euler(mat)
 
             self.channel_data.append(frame_data)
-            self.frame_times.append(0.4)
-
-    def state_string(self, state):
-        if state == Leap.Gesture.STATE_START:
-            return "STATE_START"
-        if state == Leap.gesture.STATE_UPDATE:
-            return "STATE_UPDATE"
-        if state == Leap.gesture.STATE_STOP:
-            return "STATE_STOP"
-        if state == Leap.gesture.STATE_INVALID:
-            return "STATE_INVALID"
+            self.frame_times += frame.current_frames_per_second
 
 
 def main():
     # Create a sample listener and controller
     listener = BVHListener()
     controller = Leap.Controller()
+
+    controller.set_policy(Leap.Controller.POLICY_BACKGROUND_FRAMES)
 
     # Have the sample listener receive events from the controller
     controller.add_listener(listener)
