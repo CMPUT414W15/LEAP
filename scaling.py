@@ -1,6 +1,8 @@
 import bpy
 import numpy
 import math
+import re
+import mathutils
 
 
 class Scaler:
@@ -10,7 +12,7 @@ class Scaler:
     GOLDEN_RATIO = 1.618
 
     # name of the forarm bone, should always be this name
-    FOREARM = 'rForeArm'
+    FOREARM = 'forearm'
 
     # name of the hand objects after imported into blender
     leftHandName = ''
@@ -64,8 +66,9 @@ class Scaler:
         armatures = bpy.data.armatures[self.modelName]
         if armatures is not None:
             bones = armatures.bones
-            if self.FOREARM in bones:
-                return bones[self.FOREARM].length
+            for bone in bones:
+                if re.search(self.FOREARM, bone.name, re.IGNORECASE):
+                    return bone.length
 
         return -1
 
@@ -94,6 +97,8 @@ class Scaler:
     def scaleHand(self, hand):
         bpySceneObj = bpy.context.scene.objects
         bpyDataObj = bpy.data.objects
+        bpyOpsObj = bpy.ops.object
+        bpyObj = bpy.context.object
 
         # set the active object to be resized
         bpySceneObj.active = bpyDataObj.get(hand)
@@ -102,7 +107,16 @@ class Scaler:
             scaleFactor = self.getScaleFactor()
             if scaleFactor != 0:
                 scaleFactor = 1/scaleFactor
-                handModel.scale = (scaleFactor, scaleFactor, scaleFactor)
+                
+                # scale each individual bone in the hand
+                bpyOpsObj.mode_set(mode='EDIT')
+
+                mat = mathutils.Matrix.Scale(scaleFactor, 3)
+
+                for bone in bpyObj.data.edit_bones:
+                        bone.transform(mat,  scale = True, roll = False)
+
+                bpyOpsObj.mode_set(mode='OBJECT')
 
         bpySceneObj.active = None
 
@@ -110,4 +124,3 @@ class Scaler:
     def scaleBothHands(self):
         self.scaleHand(self.leftHandName)
         self.scaleHand(self.rightHandName)
-        
