@@ -101,7 +101,6 @@ class Scaler:
 
         # set the active object to be resized
         bpySceneObj.active = bpyDataObj.get(hand)
-        print(hand)
         handModel = bpyDataObj[hand]
         bpyObj = bpy.context.object
         
