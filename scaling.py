@@ -34,10 +34,10 @@ class Scaler:
         return length
 
     # calculate the length of the leap hand imported into blender
-    def getLeapHandLength(self):
+    def getLeapHandLength(self, hand):
         middleFinger = 'Middle_Metacarpal'
         # assuming the model is always loaded after the body model
-        armatures = bpy.data.armatures[self.leftHandName]
+        armatures = bpy.data.armatures[hand]
         if armatures is not None:
             bones = armatures.bones
             if middleFinger in bones:
@@ -73,12 +73,12 @@ class Scaler:
         return -1
 
     # returns the scale factor required to scale the leap hand model
-    def getScaleFactor(self):
+    def getScaleFactor(self, hand):
         scaleFactor = 0
 
         foreArmLength = self.getForeArmLength()
         modelHandLength = self.getModelHandLength()
-        leapHandLength = self.getLeapHandLength()
+        leapHandLength = self.getLeapHandLength(hand)
 
         if foreArmLength > 0:
             if modelHandLength < 0:
@@ -98,13 +98,15 @@ class Scaler:
         bpySceneObj = bpy.context.scene.objects
         bpyDataObj = bpy.data.objects
         bpyOpsObj = bpy.ops.object
-        bpyObj = bpy.context.object
 
         # set the active object to be resized
         bpySceneObj.active = bpyDataObj.get(hand)
+        print(hand)
         handModel = bpyDataObj[hand]
+        bpyObj = bpy.context.object
+        
         if handModel is not None:
-            scaleFactor = self.getScaleFactor()
+            scaleFactor = self.getScaleFactor(hand)
             if scaleFactor != 0:
                 scaleFactor = 1/scaleFactor
                 
