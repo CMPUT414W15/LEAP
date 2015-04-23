@@ -23,6 +23,8 @@ def get_rotation(action, bonename, frame=1):
 ####==========================================================================
 def listRotation(action, bonename):
 	rot = []
+	if bonename[-3:] == "001":
+		bonename = bonename[:-4]
 	for i in range(1, int(action.fcurves[0].range()[1]) + 1):
 		rot.append(get_rotation(action, bonename, i))
 	return rot
@@ -66,15 +68,17 @@ bpy.ops.object.mode_set(mode="EDIT")
 body = obj[0]
 
 for bone in body.data.edit_bones:
-    if (bone.name == "lHand"):
+    if bone.name == "lHand":
         blh = bone
-    if (bone.name == "LeftHand"):
+    if bone.name == "LeftHand":
         lh = bone
+    if bone.name == "rHand":
+    	brh = bone
+    if bone.name == "RightHand":
+    	rh = bone
 
+rh.parent = brh
 lh.parent = blh
-
-# # Force attach to parent
-# for bone in body.data.edit_bones:
 
 vecs = []
 
@@ -84,10 +88,21 @@ for child in blh.children_recursive:
 	else:
 		vecs.append((child.name, child.tail-child.head))
 
+for child in brh.children_recursive:
+	if child.name[:1] == "r":
+		body.data.edit_bones.remove(child)
+	else:
+		vecs.append((child.name, child.tail-child.head))
+
 vec = [v[1] for i, v in enumerate(vecs) if v[0] == lh.name]
 vec = vec[0]
 lh.use_connect = True
 lh.tail = lh.head + vec
+
+vec = [v[1] for i, v in enumerate(vecs) if v[0] == rh.name]
+vec = vec[0]
+rh.use_connect = True
+rh.tail = rh.head + vec
 
 for bone in lh.children_recursive:
 	bone.use_connect = True
@@ -95,16 +110,29 @@ for bone in lh.children_recursive:
 	vec = vec[0]
 	bone.tail = bone.head + vec
 
+for bone in rh.children_recursive:
+	bone.use_connect = True
+	vec = [v[1] for i, v in enumerate(vecs) if v[0] == bone.name]
+	vec = vec[0]
+	bone.tail = bone.head + vec
+
 bodyActions = bpy.data.actions[0]
-handActions = bpy.data.actions[1]
+handActions1 = bpy.data.actions['left']
+handActions2 = bpy.data.actions['right']
+
+print(handActions1)
+print(handActions2)
 
 bonename = ["Thumb", "Index", "Middle", "Ring", "Pinky"]
-joint = ["Metacarpal", "Proximal", "Intermediate", "Distal"]
+joint = ["Metacarpal", "Proximal", "Intermediate", "Distal", "Metacarpal.001", "Proximal.001", "Intermediate.001", "Distal.001"]
 
 for b in bonename:
 	for j in joint:
 		bone = b + "_" + j
-		rot = listRotation(handActions, bone)
+		if bone[-3:] == "001":
+			rot = listRotation(handActions2, bone)
+		else:
+			rot = listRotation(handActions1, bone)
 		addRotation(bodyActions, bone, rot)
 
 
