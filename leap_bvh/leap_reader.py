@@ -15,7 +15,7 @@ from numpy.linalg import inv
 from numpy import float64, hypot, zeros, matrix
 
 # if you don't have the LeapSDK setup in PATH, use:
-# sys.path.insert(0, "/Users/Karim/Workspace/LeapSDK/lib")
+sys.path.insert(0, "/Users/aaron_t15/Desktop/LeapSDK/lib")
 
 import Leap
 
