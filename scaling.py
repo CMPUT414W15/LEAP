@@ -125,3 +125,8 @@ class Scaler:
     def scaleBothHands(self):
         self.scaleHand(self.leftHandName)
         self.scaleHand(self.rightHandName)
+
+
+
+x = Scaler('73_13', 'left', 'right')
+x.scaleBothHands()
