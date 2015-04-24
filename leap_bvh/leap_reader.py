@@ -15,7 +15,7 @@ from numpy.linalg import inv
 from numpy import float64, hypot, zeros, matrix
 
 # if you don't have the LeapSDK setup in PATH, use:
-sys.path.insert(0, "/Users/aaron_t15/Desktop/LeapSDK/lib")
+# sys.path.insert(0, "/Users/aaron_t15/Desktop/LeapSDK/lib")
 
 import Leap
 
@@ -32,26 +32,29 @@ class BVHListener(Leap.Listener):
         self.channel_data = []
 
     def on_exit(self, controller):
+        # Calculate avg fps from # of frames and total fps
         frame_sample = 1 / (self.frame_times / len(self.channel_data))
 
         print(createMotion(self.channel_data, frame_sample))
 
+    """ Convert a leap Vector class to a string """
     def vec_to_str(self, v):
         return " ".join(str(i) for i in [v.x, v.y, v.z])
 
+    """ NumPy-ify a LEAP matrix's 3x3 array """
     def npmat(self, mat):
-        """ NumPy-ify a LEAP matrix's 3x3 array """
         return np.matrix([[mat[0], mat[1], mat[2]],
                           [mat[3], mat[4], mat[5]],
                           [mat[6], mat[7], mat[8]]])
 
+    """ Get Euler angles as calculated in the LEAP API sample code """
     def hand_to_euler(self, normal, direction):
-        """ Get Euler angles as calculated in the LEAP API sample code """
         pitch = direction.pitch * Leap.RAD_TO_DEG
         yaw = direction.yaw * Leap.RAD_TO_DEG
         roll = normal.roll * Leap.RAD_TO_DEG
         return "%s %s %s " % (roll, pitch, yaw)
 
+    """ Convert 3x3 rotation matrix to euler angles """
     def rotation_to_euler(self, R):
         # old decomposition
         # yaw = np.arctan2(R[2,1], R[2,2])
@@ -108,16 +111,20 @@ class BVHListener(Leap.Listener):
                 print(createHeader(joints, offsets))
                 self.first_frame = frame.id
 
-            # right hand only?
-
+            # No need to capture hand location
+            # Set to origin everytime
             frame_data = "0 0 0 "
             frame_data += self.hand_to_euler(hand.palm_normal, hand.direction)
 
+            # Iterate through fingers
             for finger in hand.fingers:
 
                 for b in range(4):
                     bone = finger.bone(b)
 
+                    # Thumb's have no Metacarpal bone
+                    # but LEAP still returns a bone with length 0
+                    # which throws off Blender
                     if finger.type() == Leap.Finger.TYPE_THUMB and b == 0:
                         frame_data += "0 0 0 "
                     else:

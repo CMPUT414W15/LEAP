@@ -41,7 +41,7 @@ def createHeader(joints, offsets):
         # First joint (connected to the root, distance should be 0)
         elif joint[-10:] == "Metacarpal":
             header += '\n' + '\t'*(c - counter) +  'JOINT %s\n'%(joint) + '\t'*(c - counter + 1) + '{\n' + '\t'*(c - counter + 1) + 'OFFSET 0.0 0.0 0.0\n' + '\t'*(c - counter + 1) +'CHANNELS %s '%(channels[c])
-        
+
         # Any other joint
         else:
             header += '\n' + '\t'*(c - counter) +  'JOINT %s\n'%(joint) + '\t'*(c - counter + 1) + '{\n' + '\t'*(c - counter + 1) + 'OFFSET %s \n'%(offsets[c-1]) + '\t'*(c - counter + 1) +'CHANNELS %s '%(channels[c])
@@ -60,5 +60,5 @@ def createMotion(motions, time):
     motion = "MOTION\nFrames: %s\nFrame Time: %s"%(len(motions), time) + '\n'
     # Information for each frame
     motion += "\n".join(motions)
-    
+
     return motion
