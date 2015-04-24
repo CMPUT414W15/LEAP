@@ -1,5 +1,4 @@
 import bpy
-import numpy
 import math
 import re
 import mathutils
@@ -42,7 +41,8 @@ class Scaler:
             bones = armatures.bones
             if middleFinger in bones:
                 finger = bones[middleFinger]
-                return finger.length + self.childrenBoneLength(finger.children_recursive)
+                return finger.length + \
+                    self.childrenBoneLength(finger.children_recursive)
 
         return -1
 
@@ -55,10 +55,10 @@ class Scaler:
             bones = armatures.bones
             if middleFinger in bones:
                 finger = bones[middleFinger]
-                return bones[hand].length + finger.length + self.childrenBoneLength(finger.children_recursive)
+                return bones[hand].length + finger.length + \
+                    self.childrenBoneLength(finger.children_recursive)
 
         return -1
-
 
     # returns the length of the forearm of the model
     def getForeArmLength(self):
@@ -84,7 +84,10 @@ class Scaler:
             if modelHandLength < 0:
                 # in case where there isnt a hand available
                 # we scale it based on the golden ratio
-                modelHandLength = (self.GOLDEN_RATIO*foreArmLength - foreArmLength)
+                modelHandLength = (
+                    self.GOLDEN_RATIO *
+                    foreArmLength -
+                    foreArmLength)
 
             scaleFactor = leapHandLength/modelHandLength
 
@@ -103,19 +106,17 @@ class Scaler:
         bpySceneObj.active = bpyDataObj.get(hand)
         handModel = bpyDataObj[hand]
         bpyObj = bpy.context.object
-        
         if handModel is not None:
             scaleFactor = self.getScaleFactor(hand)
             if scaleFactor != 0:
                 scaleFactor = 1/scaleFactor
-                
                 # scale each individual bone in the hand
                 bpyOpsObj.mode_set(mode='EDIT')
 
                 mat = mathutils.Matrix.Scale(scaleFactor, 3)
 
                 for bone in bpyObj.data.edit_bones:
-                        bone.transform(mat,  scale = True, roll = False)
+                    bone.transform(mat,  scale=True, roll=False)
 
                 bpyOpsObj.mode_set(mode='OBJECT')
 
@@ -125,7 +126,6 @@ class Scaler:
     def scaleBothHands(self):
         self.scaleHand(self.leftHandName)
         self.scaleHand(self.rightHandName)
-
 
 
 x = Scaler('73_13', 'left', 'right')
