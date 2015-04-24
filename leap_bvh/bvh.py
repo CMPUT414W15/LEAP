@@ -11,28 +11,38 @@ def createHeader(joints, offsets):
 
     header = "HIERARCHY"
 
+    # Strings used in header
     root = " 6 Xposition Yposition Zposition Zrotation Yrotation Xrotation"
     joint = " 3 Zrotation Yrotation Xrotation"
 
+    # Keep track of channels to add to BVH
     channels = [root] + [joint] * (len(joints) - 1)
 
+    # Keep track of number of tabs (aesthetic formatting only)
     counter = 0
+
     for c, joint in enumerate(joints):
+    	# Root node
         if c == 0:
             header += '\n' + '\t'*(c - counter) +  'ROOT %s\n{\n'%(joint) + '\t'*(c - counter + 1) + 'OFFSET %s \n'%(offsets[c]) + '\t'*(c - counter + 1) +'CHANNELS %s '%(channels[c])
             continue
 
+        # End Site (Distal bone)
         if joint[-6:] == "Distal":
             header += '\n' + '\t'*(c - counter) +  'JOINT %s\n'%(joint) + '\t'*(c - counter) + '{\n' + '\t'*(c - counter + 1) + 'OFFSET %s \n'%(offsets[c-1]) + '\t'*(c - counter + 1) +'CHANNELS %s '%(channels[c])
             header += '\n' + '\t' * (c - counter + 1) + 'End Site\n' + '\t' * (c - counter + 1) + '{\n' +'\t' * (c - counter + 2) + 'OFFSET %s\n'%(offsets[c])
             temp = counter
             counter = c
+            # Add closing braces
             while (c - temp >= 0):
                 header += '\t'*(c - temp + 1) + '}\n'
                 c -= 1
 
+        # First joint (connected to the root, distance should be 0)
         elif joint[-10:] == "Metacarpal":
             header += '\n' + '\t'*(c - counter) +  'JOINT %s\n'%(joint) + '\t'*(c - counter + 1) + '{\n' + '\t'*(c - counter + 1) + 'OFFSET 0.0 0.0 0.0\n' + '\t'*(c - counter + 1) +'CHANNELS %s '%(channels[c])
+        
+        # Any other joint
         else:
             header += '\n' + '\t'*(c - counter) +  'JOINT %s\n'%(joint) + '\t'*(c - counter + 1) + '{\n' + '\t'*(c - counter + 1) + 'OFFSET %s \n'%(offsets[c-1]) + '\t'*(c - counter + 1) +'CHANNELS %s '%(channels[c])
 
@@ -46,28 +56,9 @@ def createHeader(joints, offsets):
 # 	time = time frame value
 ###===================================================================
 def createMotion(motions, time):
-
+	# Motion header information
     motion = "MOTION\nFrames: %s\nFrame Time: %s"%(len(motions), time) + '\n'
+    # Information for each frame
     motion += "\n".join(motions)
+    
     return motion
-
-
-###===================================================================
-# 	Example Usage
-# 	2 fingers + Root
-# 	3 frames of data
-# 	Made up offsets
-###===================================================================
-if __name__ == "__main__":
-    joints = ["Hand", "Thumb Metacarpal", "Thumb Proximal", "Thumb Intermediate", "Thumb Distal", "Index Metacarpal", "Index Proximal", "Index Intermediate", "Index Distal"]
-    offsets = ["0 0 0", "0 0 1", "0 1 0", "0 1 1", "1 0 0", "1 0 1", "1 1 0", "1 1 1", "0 0 0", "0 0 1", "0 1 0"]
-    motions = ['3 2 1 3 4 3', '3 2 4 3 2 4', '4 5 2 3 4 2']
-    time = '0.5'
-
-    header = createHeader(joints, offsets)
-    motion = createMotion(motions, time)
-
-    BVH = header + motion
-
-    print(BVH)
-    # print(header)

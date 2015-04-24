@@ -1,3 +1,11 @@
+####==========================================================================
+# File used to implement attaching of hand BVH data to the body
+# This script contains some hard-coded strings
+# This script was tested using BVH files from the cmu database
+# The body BVH is expected to follow a naming convention of "l" or "r" + <bodypart>
+# The hands are named using our "bvh.py" and "leap_reader.py" script
+####==========================================================================
+
 import bpy
 from numpy import array, zeros, argmin, inf
 from numpy.linalg import norm
